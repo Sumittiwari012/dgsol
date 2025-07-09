@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Volunteer Assistance</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Poppins', sans-serif;
+      background: #f5f7fa;
+    }
+
+    #interestedSidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 300px;
+      height: 100%;
+      background: #f1f2f6;
+      padding: 20px;
+      overflow-y: auto;
+      border-right: 1px solid #dcdde1;
+      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    }
+
+    #interestedSidebar h2 {
+      font-size: 20px;
+      margin-bottom: 15px;
+      color: #2f3542;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 20px;
+      margin-left: 320px; /* Space for sidebar */
+    }
+
+    h2 {
+      text-align: center;
+      color: #2f3542;
+      font-size: 32px;
+      margin-bottom: 30px;
+    }
+
+    .filters {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 40px;
+    }
+
+    select {
+      padding: 12px 15px;
+      border-radius: 8px;
+      border: 1px solid #ced6e0;
+      font-size: 15px;
+      background: white;
+      transition: 0.2s ease-in-out;
+    }
+
+    select:hover {
+      border-color: #70a1ff;
+    }
+
+    .card-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 25px;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 15px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+      padding: 25px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+    }
+
+    .card h3 {
+      font-size: 22px;
+      margin-bottom: 8px;
+      color: #3742fa;
+    }
+
+    .card p {
+      font-size: 14px;
+      margin: 5px 0;
+      color: #444;
+    }
+
+    .tags {
+      margin-top: 10px;
+    }
+
+    .tag {
+      display: inline-block;
+      background: #70a1ff;
+      color: #fff;
+      padding: 5px 10px;
+      margin: 3px 5px 0 0;
+      font-size: 12px;
+      border-radius: 12px;
+    }
+
+    input[type="number"] {
+      margin-top: 10px;
+      padding: 10px;
+      font-size: 14px;
+      width: 90px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 10px 15px;
+      background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: linear-gradient(135deg, #4834d4, #9c88ff);
+    }
+
+    .no-result {
+      grid-column: 1 / -1;
+      text-align: center;
+      color: #999;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="interestedSidebar">
+  <h2>Interested Volunteers</h2>
+  <div class="card-container" id="interestedCards">
+    <p class="no-result">Loading...</p>
+  </div>
+</div>
+
+<div class="container">
+  <h2>Find a Volunteer for Support</h2>
+
+  <form id="filterForm">
+    <div class="filters">
+      <select name="mode" id="modeFilter">
+        <option value="">All Modes</option>
+        <option value="Call">Call</option>
+        <option value="Text">Text</option>
+        <option value="Both">Both</option>
+      </select>
+
+      <select name="gender" id="genderFilter">
+        <option value="">All Genders</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+      </select>
+
+      <select name="language" id="languageFilter">
+        <option value="">All Languages</option>
+        <option value="English">English</option>
+        <option value="Hindi">Hindi</option>
+        <option value="Bengali">Bengali</option>
+        <option value="Tamil">Tamil</option>
+        <option value="Telugu">Telugu</option>
+        <option value="Marathi">Marathi</option>
+        <option value="Gujarati">Gujarati</option>
+        <option value="Kannada">Kannada</option>
+        <option value="Malayalam">Malayalam</option>
+        <option value="Punjabi">Punjabi</option>
+      </select>
+    </div>
+  </form>
+
+  <div class="card-container" id="volunteerCards"></div>
+</div>
+
+<script>
+  // Ensure 'username' is passed from your EJS rendering route
+  const loggedInUserId = "<%= username %>"; 
+
+  const modeFilter = document.getElementById("modeFilter");
+  const genderFilter = document.getElementById("genderFilter");
+  const languageFilter = document.getElementById("languageFilter");
+  const volunteerCards = document.getElementById("volunteerCards");
+  const interestedCards = document.getElementById("interestedCards"); // Get the interested cards container
+
+  async function fetchVolunteers() {
+    const mode = modeFilter.value;
+    const gender = genderFilter.value;
+    const language = languageFilter.value;
+
+    try {
+      const response = await fetch('/filter_volunteers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode, gender, language })
+      });
+
+      const data = await response.json();
+      renderVolunteers(data);
+    } catch (error) {
+      console.error('Error fetching volunteers:', error);
+      volunteerCards.innerHTML = '<p class="no-result">Failed to load volunteers.</p>';
+    }
+  }
+
+  function renderVolunteers(volunteers) {
+    volunteerCards.innerHTML = "";
+
+    if (!volunteers.length) {
+      volunteerCards.innerHTML = "<p class='no-result'>No matching volunteers found.</p>";
+      return;
+    }
+
+    volunteers.forEach((v, index) => {
+      const card = document.createElement("div");
+      card.className = "card";
+      const cardId = `card-${index}`;
+
+      const pricePerMinute = v.price / 60;
+      const languages = (v.lang || []).map(l => `<span class="tag">${l}</span>`).join("");
+
+      card.innerHTML = `
+        <h3>${v.name}</h3>
+        <p><strong>Gender:</strong> ${v.gender}</p>
+        <p><strong>Mode:</strong> ${v.mode}</p>
+        <p><strong>Price/hour:</strong> ₹${v.price}</p>
+        <p><strong>Price/min:</strong> ₹${pricePerMinute.toFixed(2)}</p>
+        <div class="tags"><strong>Languages:</strong><br>${languages}</div>
+        <label for="duration-${cardId}"><strong>Duration (minutes):</strong></label>
+        <input type="number" id="duration-${cardId}" min="1" value="60"/>
+        <p id="amount-${cardId}"><strong>Payable:</strong> ₹${(pricePerMinute * 60).toFixed(2)}</p>
+        <button id="interested-${cardId}">Mark Interested</button>
+      `;
+
+      const durationInput = card.querySelector(`#duration-${cardId}`);
+      const amountText = card.querySelector(`#amount-${cardId}`);
+      const interestedBtn = card.querySelector(`#interested-${cardId}`);
+
+      durationInput.addEventListener("input", () => {
+        const minutes = parseFloat(durationInput.value) || 0;
+        const total = (minutes * pricePerMinute).toFixed(2);
+        amountText.innerHTML = `<strong>Payable:</strong> ₹${total}`;
+      });
+
+      interestedBtn.addEventListener("click", async () => {
+        const minutes = parseFloat(durationInput.value) || 0;
+        const total = (minutes * pricePerMinute).toFixed(2);
+
+        try {
+          const res = await fetch("/mark_interested", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId: loggedInUserId,
+              volunteerId: v.username,
+              mode: v.mode,
+              durationInMinutes: minutes,
+              payableAmount: parseFloat(total)
+            })
+          });
+
+          const result = await res.json();
+          if (result.success) {
+            alert("Marked as interested!");
+            card.remove(); // Remove the card from the main list
+            addToInterestedList({ // Pass the necessary data for the interested sidebar
+                name: v.name,
+                mode: v.mode,
+                durationInMinutes: minutes,
+                payableAmount: parseFloat(total)
+            });
+          } else {
+            alert("Failed: " + result.message);
+          }
+        } catch (err) {
+          console.error(err);
+          alert("An error occurred while marking interest.");
+        }
+      });
+
+      volunteerCards.appendChild(card);
+    });
+  }
+
+  // --- START: MODIFIED/NEW CODE FOR INTERESTED SIDEBAR ---
+
+ async function startChat(bookingId) {
+  // Redirect to chat page with the booking ID (adjust as needed)
+  alert(bookingId);
+   try {
+          const res = await fetch("/chat_room", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              booking_id: bookingId,
+            })
+          });
+          const result = await res.json();
+          if (result.success) {
+            window.location.href = `/chat_room/${bookingId}`;
+          } else {
+            alert("Failed: " + result.message);
+          }
+        } catch (err) {
+          console.error(err);
+          alert("An error occurred while updating chatroom data.");
+        }
+}
+
+  function addToInterestedList(bookingData) {
+  if (interestedCards.querySelector('.no-result')) {
+    interestedCards.innerHTML = '';
+  }
+
+  const card = document.createElement("div");
+  card.className = "card";
+
+  let footerContent = "";
+
+  if (bookingData.confirmation) {
+    footerContent = `<button onclick="startChat('${bookingData.booking_id}')">Enter Chat</button>`;
+  } else {
+    footerContent = `<p><em>Waiting for volunteer confirmation...</em></p>`;
+  }
+
+  card.innerHTML = `
+    <h3>${bookingData.name}</h3>
+    <p><strong>Mode:</strong> ${bookingData.mode}</p>
+    <p><strong>Duration:</strong> ${bookingData.durationInMinutes} min</p>
+    <p><strong>Payable:</strong> ₹${bookingData.payableAmount.toFixed(2)}</p>
+    ${footerContent}
+  `;
+
+  interestedCards.appendChild(card);
+}
+
+
+  async function fetchInterestedVolunteers() {
+    try {
+      const response = await fetch(`/get_interested_volunteers?user=${loggedInUserId}`);
+      const interestedBookings = await response.json(); // Data from your new backend route
+      
+      // Always clear first to handle updates/removals
+      interestedCards.innerHTML = ""; 
+
+      if (!interestedBookings.length) {
+        interestedCards.innerHTML = "<p class='no-result'>No interested volunteers yet.</p>";
+        return;
+      }
+
+      interestedBookings.forEach(booking => {
+        // Pass the entire booking object received from the backend
+        addToInterestedList(booking);
+      });
+    } catch (error) {
+      console.error("Error fetching interested volunteers:", error);
+      interestedCards.innerHTML = "<p class='no-result'>Failed to load interested volunteers.</p>";
+    }
+  }
+
+  // --- END: MODIFIED/NEW CODE FOR INTERESTED SIDEBAR ---
+
+  modeFilter.addEventListener("change", fetchVolunteers);
+  genderFilter.addEventListener("change", fetchVolunteers);
+  languageFilter.addEventListener("change", fetchVolunteers);
+
+  // Initial fetches when the page loads
+  fetchVolunteers();
+  fetchInterestedVolunteers(); // Call this new function on page load
+</script>
+
+</body>
+</html>

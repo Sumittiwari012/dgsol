@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Volunteer Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f8fb;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .username-display {
+      text-align: center;
+      font-size: 18px;
+      color: #555;
+      margin-bottom: 25px;
+    }
+
+    .btn-available {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      font-size: 18px;
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      margin-bottom: 30px;
+    }
+    .btn-available.available {
+      background-color: #28a745;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 12px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+
+    th {
+      background-color: #007bff;
+      color: white;
+    }
+
+    td {
+      background-color: #f9f9f9;
+    }
+
+    .btn-start {
+      padding: 6px 12px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn-start:hover {
+      background-color: #0056b3;
+    }
+
+    input[type="file"] {
+      border: none;
+    }
+
+    .header {
+      position: relative;
+      height: 60px;
+      background-color: #f8f9fa;
+    }
+
+    .header-right {
+      position: absolute;
+      top: 10px;
+      right: 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header-right">
+    <i class="fas fa-bell"></i>
+    <form action="/logout_p" method="POST" style="display: inline;">
+      <button type="submit" class="logout">Logout</button>
+    </form>
+  </div>
+
+  <div class="container">
+    <h2>Volunteer Dashboard</h2>
+    <div class="username-display">
+      Logged in as: <strong><%= username %></strong>
+    </div>
+
+    <form id="availability-form" action="/volunteer/availability" method="POST">
+      <input type="hidden" name="status" id="availability-status" value="available">
+      <button type="submit" class="btn-available <%= v_av && v_av.available ? 'available' : '' %>">
+        <%= v_av && v_av.available ? 'Available' : 'Not Available' %>
+      </button>
+    </form>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Date & Time</th>
+          <th>Person Name</th>
+          <th>Preferred Mode</th>
+          <th>Duration (Minutes)</th>
+          <th>Start</th>
+          <th>Upload Proof</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (bookings.length === 0) { %>
+          <tr>
+            <td colspan="6">No upcoming bookings.</td>
+          </tr>
+        <% } else { %>
+          <% bookings.forEach((booking, index) => { %>
+            <tr>
+              <td><%= new Date(booking.date).toLocaleString() %></td>
+              <td><%= booking.name %></td>
+              <td><%= booking.mode %></td>
+              <td><%= booking.duration %></td>
+              <td>
+                <label>
+                  <input type="checkbox"
+                    id="check-<%= index %>"
+                    data-id="<%= booking.booking_id %>"
+                    onchange="toggleButton(<%= index %>)"
+                    <%= booking.confirmation ? 'checked disabled' : '' %> />
+                  Confirm
+                </label>
+                <br />
+                <button class="btn-start"
+                        id="start-btn-<%= index %>"
+                        onclick="joinSession('<%= booking.booking_id %>')"
+                        <%= booking.uid && booking.start_time_of_client ? '' : 'disabled' %>>
+                  <%= booking.uid && booking.start_time_of_client ? 'Join' : 'Start' %>
+                </button>
+              </td>
+              <td><input type="file" accept=".pdf,.jpg,.jpeg,.png" /></td>
+            </tr>
+          <% }); %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    const availableBtn = document.querySelector('.btn-available');
+    availableBtn.addEventListener('click', function () {
+      availableBtn.classList.toggle('available');
+      availableBtn.textContent = availableBtn.classList.contains('available') 
+        ? 'Available' 
+        : 'Not Available';
+    });
+
+    function toggleButton(index) {
+      const checkbox = document.getElementById(`check-${index}`);
+      const button = document.getElementById(`start-btn-${index}`);
+      const bookingId = checkbox.dataset.id;
+
+      if (checkbox.checked) {
+        fetch('/confirm-booking', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bookingId })
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            checkbox.disabled = true;
+            button.disabled = false;
+          } else {
+            alert('Failed to confirm booking: ' + data.message);
+            checkbox.checked = false;
+          }
+        })
+        .catch(err => {
+          console.error('Error:', err);
+          alert('Server error while confirming booking.');
+          checkbox.checked = false;
+        });
+      }
+    }
+
+async function joinSession(bookingId) {
+  // Redirect to chat page with the booking ID (adjust as needed)
+  alert(bookingId);
+   try {
+          const res = await fetch("/join_volunteer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              booking_id: bookingId,
+            })
+          });
+          const result = await res.json();
+          if (result.success) {
+            window.location.href = `/chat_room/${bookingId}`;
+          } else {
+            alert("Failed: " + result.message);
+          }
+        } catch (err) {
+          console.error(err);
+          alert("An error occurred while updating chatroom data.");
+        }
+}
+
+  </script>
+</body>
+</html>

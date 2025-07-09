@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mental Health Assessment</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 900px;
+      margin: auto;
+      background-color: #f0f8ff;
+    }
+    h2 {
+      color: #2c3e50;
+    }
+    .question {
+      margin-bottom: 20px;
+    }
+    .result {
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+      font-weight: bold;
+    }
+    .mild { background-color: #dff0d8; color: #3c763d; }
+    .moderate { background-color: #fcf8e3; color: #8a6d3b; }
+    .severe { background-color: #f2dede; color: #a94442; }
+  </style>
+</head>
+<body>
+
+  <h2>Mental Health Self-Assessment</h2>
+  <form id="assessmentForm">
+    <p>Rate each item from 0 (Not at all) to 4 (Extremely) based on how you've felt in the past 2 weeks.</p>
+
+    <div id="questions"></div>
+
+    <button type="submit">Submit Assessment</button>
+  </form>
+
+  <div id="result" class="result" style="display: none;"></div>
+
+  <script>
+    const questions = [
+      "Do you feel sad, hopeless, or down most of the time?",
+      "Have you lost interest or pleasure in activities you usually enjoy?",
+      "Do you feel overwhelmed by stress or unable to cope with daily tasks?",
+      "Do you feel irritable or angry more than usual?",
+      "Do you experience frequent worry or nervousness that is hard to control?",
+      "Do you have physical symptoms like racing heart, sweating, or trembling due to anxiety?",
+      "Do you avoid situations (e.g., social events, work) due to fear or anxiety?",
+      "Do you experience sudden panic attacks or intense fear?",
+      "Have you noticed changes in your sleep patterns (e.g., insomnia or oversleeping)?",
+      "Have you experienced changes in appetite or weight (e.g., eating too much or too little)?",
+      "Do you engage in repetitive behaviors (e.g., checking, washing) to reduce anxiety?",
+      "Do you have difficulty concentrating or making decisions?",
+      "Do you experience intrusive thoughts that are distressing or hard to dismiss?",
+      "Do you have thoughts of harming yourself or others?",
+      "Have you experienced hallucinations (e.g., hearing voices, seeing things others don’t)?"
+    ];
+
+    const questionsContainer = document.getElementById("questions");
+
+    questions.forEach((q, i) => {
+      const div = document.createElement("div");
+      div.classList.add("question");
+      div.innerHTML = `
+        <label><strong>Q${i + 1}:</strong> ${q}</label><br/>
+        ${[0,1,2,3,4].map(val => `
+          <label>
+            <input type="radio" name="q${i+1}" value="${val}" required> ${val}
+          </label>`).join(' ')}
+      `;
+      questionsContainer.appendChild(div);
+    });
+
+    document.getElementById("assessmentForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      let totalScore = 0;
+      let q14 = 0, q15 = 0;
+      const formData = new FormData(this);
+
+      for (let i = 1; i <= 15; i++) {
+        const val = parseInt(formData.get(`q${i}`));
+        totalScore += val;
+        if (i === 14) q14 = val;
+        if (i === 15) q15 = val;
+      }
+
+      const resultDiv = document.getElementById("result");
+      resultDiv.style.display = 'block';
+
+      if (q14 >= 2 || q15 >= 2) {
+        resultDiv.className = "result severe";
+        resultDiv.innerHTML = `⚠️ <strong>Critical alert:</strong> Your response indicates serious symptoms. We recommend <strong>immediate consultation with a Psychiatrist</strong>. Please also consider contacting a crisis helpline.`;
+      } else if (totalScore <= 15) {
+        resultDiv.className = "result mild";
+        resultDiv.innerHTML = `🧘 <strong>Mild Symptoms:</strong> You may benefit from talking to a <strong>Counselor</strong> for stress management and emotional support. (Score: ${totalScore})`;
+      } else if (totalScore <= 30) {
+        resultDiv.className = "result moderate";
+        resultDiv.innerHTML = `🧩 <strong>Moderate Symptoms:</strong> A <strong>Therapist</strong> may help with deeper concerns using structured techniques like CBT. (Score: ${totalScore})`;
+      } else {
+        resultDiv.className = "result severe";
+        resultDiv.innerHTML = `🚨 <strong>Severe Symptoms:</strong> Your score indicates a need for professional evaluation. Please consult a <strong>Psychiatrist</strong> for diagnosis and treatment. (Score: ${totalScore})`;
+      }
+    });
+  </script>
+</body>
+</html>

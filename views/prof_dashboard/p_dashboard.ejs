@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Therapist Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f3f5f9;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      background: #4a90e2;
+      padding: 1rem 2rem;
+      color: white;
+    }
+
+    .header-left {
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .header-right i {
+      font-size: 1.3rem;
+      cursor: pointer;
+    }
+
+    .logout {
+      background: white;
+      color: #4a90e2;
+      padding: 6px 14px;
+      border-radius: 5px;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    #incompleteNotice {
+      display: none;
+      background: #fde047;
+      color: #92400e;
+      text-align: center;
+      padding: 10px;
+      font-weight: 600;
+    }
+
+    #incompleteNotice a {
+      color: #b91c1c;
+      text-decoration: underline;
+    }
+
+    .dashboard {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 2rem;
+      gap: 2rem;
+    }
+
+    .profile-details {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      width: 280px;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: #333;
+    }
+
+    .profile-details h3 {
+      margin-top: 0;
+      color: #4a90e2;
+      font-size: 1.1rem;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(2, 250px);
+      gap: 2rem;
+    }
+
+    .card {
+      background: white;
+      padding: 1.5rem;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      text-align: center;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    }
+
+    .card.disabled {
+      pointer-events: none;
+      opacity: 0.5;
+    }
+
+    .edit-form {
+      width: 60%;
+      margin: 1rem auto;
+      background: white;
+      padding: 1rem 1.5rem;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      display: none;
+    }
+
+    .edit-form h3 {
+      text-align: center;
+      margin-bottom: 1rem;
+      font-size: 1.1rem;
+    }
+
+    .edit-form label {
+      display: block;
+      margin-bottom: 0.3rem;
+      font-weight: 500;
+    }
+
+    .edit-form input,
+    .edit-form select {
+      width: 100%;
+      padding: 0.4rem;
+      margin-bottom: 0.8rem;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 0.95rem;
+    }
+
+    .edit-form button {
+      background: #4a90e2;
+      color: white;
+      border: none;
+      padding: 0.5rem 1.2rem;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 500;
+      display: block;
+      margin: 0.5rem auto 0;
+    }
+
+    table {
+      width: 90%;
+      margin: 2rem auto;
+      border-collapse: collapse;
+      background: white;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: center;
+    }
+
+    thead {
+      background: #4a90e2;
+      color: white;
+    }
+    .modal {
+  display: none;
+  position: fixed;
+  z-index: 999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.4);
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background-color: #fff;
+  margin: auto;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  position: relative;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+}
+
+.close-button {
+  position: absolute;
+  right: 20px;
+  top: 10px;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-left" id="therapist-name">
+      <%= username %>
+    </div>
+    <div class="header-right">
+      <i class="fas fa-bell"></i>
+      <form action="/logout_p" method="POST" style="display: inline;">
+        <button type="submit" class="logout">Logout</button>
+      </form>
+    </div>
+  </div>
+
+  <% if (!isProfileComplete) { %>
+    <div id="incompleteNotice" style="display: block;">
+      ⚠️ Your profile is incomplete. Please <a href="/profile_comp">complete your profile</a> to unlock all dashboard options.
+    </div>
+  <% } %>
+
+  <div class="dashboard">
+    <div class="profile-details">
+      <h3>Your Profile</h3>
+      <p><strong>Name:</strong> <%= username %></p>
+      <p><strong>Education:</strong> <%= professional.edu %></p>
+      <p><strong>Experience:</strong> <%= professional.exp %> yrs</p>
+      <p><strong>Specialization:</strong> <%= professional.specialization %></p>
+      <p><strong>Certifications:</strong> <%= professional.certification.join(', ') %></p>
+      <p><strong>Languages:</strong> <%= professional.lang.join(', ') %></p>
+      <p><strong>Mode:</strong> <%= professional.mode.join(', ') %></p>
+      <p><strong>Fee:</strong> ₹<%= professional.price %></p>
+      <p><strong>Contact:</strong> <%= professional.email %> / <%= professional.pno %></p>
+    </div>
+
+    <div class="cards">
+      <!-- ⬇️ Changed this button to toggle weekly table -->
+      <button type="button"
+        class="card dashboard-option <%= !isProfileComplete ? 'disabled' : '' %>"
+        onclick="toggleWeeklyAvailability()">
+        Edit Pricing/Date/Time
+      </button>
+
+      <form action="/rescheduling" method="POST">
+        <button class="card dashboard-option <%= !isProfileComplete ? 'disabled' : '' %>">Ask for Rescheduling</button>
+      </form>
+
+      <form action="/update_qulification" method="POST">
+        <button type="button"
+  class="card dashboard-option <%= !isProfileComplete ? 'disabled' : '' %>"
+  onclick="toggleDegreeModal()">
+  Update Degree / Specialization / Certification
+</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scheduled Consultations Table -->
+  <div>
+    <h3 style="text-align: center; color: #4a90e2;">Scheduled Consultations</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Time</th>
+          <th>Client Name</th>
+          <th>Consultation Type</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% scheduledMeetings.forEach(meeting => { %>
+          <tr>
+            <td><%= meeting.date %></td>
+            <td><%= meeting.time %></td>
+            <td><%= meeting.client_name%></td>
+            <td><%= meeting.consult_type %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Edit Form (remains hidden unless enabled later) -->
+  <div class="edit-form" id="editForm">
+    <h3>Edit Availability</h3>
+    <label for="date">Date</label>
+    <input type="date" id="date" name="date" />
+
+    <label for="day">Day</label>
+    <select id="day" name="day">
+      <option value="">--Select--</option>
+      <option>Monday</option>
+      <option>Tuesday</option>
+      <option>Wednesday</option>
+      <option>Thursday</option>
+      <option>Friday</option>
+      <option>Saturday</option>
+      <option>Sunday</option>
+    </select>
+
+    <label for="time">Time Slot</label>
+    <select id="time" name="time"></select>
+
+    <label for="price">Pricing (₹)</label>
+    <input type="number" id="price" name="price" placeholder="e.g., 800" />
+
+    <button>Edit</button>
+  </div>
+
+  <!-- Weekly Availability Table - hidden by default -->
+  <!-- Weekly Availability Modal - Centered on screen -->
+<div id="weeklyAvailability" class="modal">
+  <div class="modal-content">
+    <span class="close-button" onclick="toggleWeeklyAvailability()">&times;</span>
+    <h3 style="text-align: center; color: #4a90e2;">Weekly Availability</h3>
+    <table style="width: 95%; font-size: 0.75rem;">
+      <thead>
+        <tr>
+          <th style="background:#4a90e2;color:white;">Day / Hour</th>
+          <% for (let h = 0; h < 24; h++) { 
+              const hr = h.toString().padStart(2, '0'); %>
+            <th><%= `${hr}:00-${(h+1).toString().padStart(2, '0')}:00` %></th>
+          <% } %>
+        </tr>
+      </thead>
+      <tbody>
+        <% const fullDays = ['sun','mon','tue','wed','thur','fri','sat']; %>
+        <% fullDays.forEach(day => {
+            const found = day_slot.find(d => d.day === day);
+            const nps = found ? found.nps : Array(24).fill(0); %>
+          <tr>
+            <td style="font-weight: bold; background: #e2e8f0; text-transform: capitalize;"><%= day %></td>
+            <% for (let h = 0; h < 24; h++) { %>
+              <td>
+                <input type="number" min="0" style="width: 50px;"
+       data-day="<%= day %>" data-hour="<%= h %>"
+       <% if (nps[h] > 0) { %>value="<%= nps[h] %>"<% } %> />
+              </td>
+            <% } %>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    <div style="text-align: center; margin-top: 1rem;">
+  <label for="consultationPrice" style="font-weight: bold; margin-right: 10px;">Consultation Price (₹):</label>
+  <input type="number" id="consultationPrice" min="0" style="width: 100px;" value="<%= professional.price || '' %>" />
+</div>
+
+    <!-- Submit Button -->
+    <div style="text-align: center; margin-top: 1rem;">
+      <button onclick="submitAvailability()" style="padding: 10px 20px; background: #4a90e2; color: white; border: none; border-radius: 5px; cursor: pointer;">
+        Submit Changes
+      </button>
+    </div>
+  </div>
+</div>
+<div id="updateDegreeModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <span class="close-button" onclick="toggleDegreeModal()">&times;</span>
+    <h3 style="text-align: center; color: #4a90e2;">Update Your Qualifications</h3>
+
+    <form action="/update_qulification" method="POST">
+      <div class="form-group">
+        <label for="edu">Highest Education</label>
+        <input type="text" id="edu" name="edu" class="form-control"
+          placeholder="e.g., M.Sc. Clinical Psychology"
+          value="<%= professional.edu %>" required />
+      </div>
+
+      <div class="form-group">
+        <label for="exp">Years of Experience</label>
+        <input type="number" id="exp" name="exp" class="form-control" min="0"
+          placeholder="e.g., 5"
+          value="<%= professional.exp %>" required />
+      </div>
+
+      <div class="form-group">
+        <label for="certification">Certifications</label>
+        <select id="certification" name="certification[]" class="form-control selectpicker" multiple data-live-search="true" data-actions-box="true">
+          <% const certifications = [
+            "CBT Certified", "DBT Certified", "Trauma-Informed Care Certified", "NLP Practitioner",
+            "Licensed Professional Counselor (LPC)", "Clinical Psychologist", "Marriage and Family Therapist (MFT)",
+            "Addiction Counselor", "Child and Adolescent Therapist", "Grief Counselor", "Art Therapist", "Music Therapist",
+            "Play Therapist", "EMDR Certified", "Positive Psychology Certified", "Mindfulness-Based Stress Reduction (MBSR) Certified",
+            "Sex Therapist", "Hypnotherapist", "Rehabilitation Counselor", "School Psychologist", "Sports Psychologist",
+            "Acceptance and Commitment Therapy (ACT)", "Schema Therapy Certified", "Psychodrama Practitioner", "Family Systems Therapy",
+            "Narrative Therapy"
+          ]; %>
+          <% certifications.forEach(cert => { %>
+            <option value="<%= cert %>" <%= professional.certification.includes(cert) ? 'selected' : '' %>><%= cert %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="form-group">
+  <label for="specialization">Specialization</label>
+  <select id="specialization" name="specialization" class="form-control selectpicker" data-actions-box="true">
+    <% const specs = ["Anxiety", "Depression", "Relationship Issues", "Stress Management", "Child Therapy", "Trauma & PTSD", "Eating Disorders", "Addiction", "Grief Counseling", "OCD", "ADHD", "Sleep Disorders", "Sexual Health"]; %>
+    <% specs.forEach(spec => { %>
+      <option value="<%= spec %>" <%= professional.specialization === spec ? 'selected' : '' %>><%= spec %></option>
+    <% }) %>
+  </select>
+</div>
+
+      <div style="text-align: center; margin-top: 1rem;">
+        <button type="submit" class="btn btn-primary">Update</button>
+      </div>
+    </form>
+  </div>
+</div>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/css/bootstrap-select.min.css">
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/js/bootstrap-select.min.js"></script>
+  <script>
+    const price = parseInt(document.getElementById('consultationPrice').value);
+    function showEditForm() {
+      document.getElementById('editForm').style.display = 'block';
+    }
+    $(document).ready(function () {
+    $('.selectpicker').selectpicker();
+  });
+    const timeSelect = document.getElementById("time");
+    for (let h = 0; h < 24; h++) {
+      const ampm = h < 12 ? 'AM' : 'PM';
+      const hour = h % 12 === 0 ? 12 : h % 12;
+      timeSelect.innerHTML += `<option>${hour}:00 ${ampm}</option>`;
+      timeSelect.innerHTML += `<option>${hour}:30 ${ampm}</option>`;
+    }
+
+    const isProfileComplete = <%= isProfileComplete ? 'true' : 'false' %>;
+    if (!isProfileComplete) {
+      document.querySelectorAll('.dashboard-option').forEach(card => {
+        card.classList.add('disabled');
+      });
+    }
+
+    function toggleWeeklyAvailability() {
+  const modal = document.getElementById("weeklyAvailability");
+  if (modal.style.display === "flex") {
+    modal.style.display = "none";
+  } else {
+    modal.style.display = "flex";
+  }
+}
+  function submitAvailability() {
+  const inputs = document.querySelectorAll('#weeklyAvailability input[type="number"]');
+  const changes = [];
+
+  inputs.forEach(input => {
+    const day = input.dataset.day;
+    const hour = parseInt(input.dataset.hour);
+    const value = parseInt(input.value);
+    if (!isNaN(value)) {
+      changes.push({ day, hour, value });
+    }
+  });
+
+  const nonZeroChanges = changes.filter(entry => entry.value > 0);
+
+  const priceInput = document.getElementById('consultationPrice');
+  const price = priceInput ? parseInt(priceInput.value) : 0;
+
+  fetch('/updateAvailability', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      availability: nonZeroChanges,
+      price
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      alert('Availability updated!');
+      toggleWeeklyAvailability();
+    } else {
+      alert('Update failed: ' + data.message);
+    }
+  })
+  .catch(err => {
+    console.error('Error:', err);
+    alert('Failed to update availability.');
+  });
+}
+  function toggleDegreeModal() {
+  const modal = document.getElementById("updateDegreeModal");
+  modal.style.display = modal.style.display === "flex" ? "none" : "flex";
+}
+  </script>
+
+</body>
+</html>
